@@ -1,6 +1,6 @@
 const fp = require('fastify-plugin'); //widen file scoop 
 const database = require('better-sqlite3');
-async function dbpluging(fastify , option) {
+async function inOutLogsPlugins(fastify , option) {
     const db = new database( "in_out_logs_db.db");
     db.exec (`
         CREATE TABLE IF NOT EXISTS types (

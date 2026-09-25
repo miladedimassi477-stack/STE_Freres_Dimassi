@@ -6,7 +6,7 @@ async function dbPlugin(fastify, options) {
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS workers (
-      worker_id              INTEGER PRIMARY KEY AUTOINCREMENT,
+      worker_id              INTEGER PRIMARY KEY ,
       worker_name            TEXT NOT NULL,
       worker_salary          REAL,
       worker_monthly_deposit REAL
