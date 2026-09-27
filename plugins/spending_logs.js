@@ -2,7 +2,7 @@ const fp = require('fastify-plugin');
 const database = require('better-sqlite3');
 
 
-async function fpplugin(fastify , option) {
+async function spendingLogsPlugins(fastify , option) {
     const db = new database('./spending__logs.db');
     db.exec(`
         CREATE TABLE IF NOT EXISTS chefs (

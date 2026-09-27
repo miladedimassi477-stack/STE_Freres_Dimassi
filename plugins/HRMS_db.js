@@ -9,23 +9,23 @@ async function dbPlugin(fastify, options) {
       worker_id              INTEGER PRIMARY KEY ,
       worker_name            TEXT NOT NULL,
       worker_salary          REAL,
-      worker_monthly_deposit REAL
+      worker_monthly_deposit REAL,
+      worker_owes   REAL DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS payroll (
       payroll_id    INTEGER PRIMARY KEY AUTOINCREMENT,
       worker_id     INTEGER NOT NULL,
-      pay_month     TEXT NOT NULL,          -- e.g. '2026-09'
       to_pay_worker REAL DEFAULT 0,
-      worker_owes   REAL DEFAULT 0,
-      bonus         REAL DEFAULT 0,
+      bonuse        REAL DEFAULT 0,
+      money_given_this_week_before_pay_day REAL DEFAULT 0
       FOREIGN KEY (worker_id) REFERENCES workers(worker_id) ON DELETE CASCADE
     );
 
     CREATE TABLE IF NOT EXISTS attendance (
-      attendance_id   INTEGER PRIMARY KEY AUTOINCREMENT,
+      attandence_id   INTEGER PRIMARY KEY AUTOINCREMENT,
       worker_id       INTEGER NOT NULL,
-      work_days       REAL NOT NULL,       
+      number_of_days_worked       REAL NOT NULL,       
       days_worked     TEXT NOT NULL, 
       extra_hours     REAL DEFAULT 0,
       FOREIGN KEY (worker_id) REFERENCES workers(worker_id) ON DELETE CASCADE
