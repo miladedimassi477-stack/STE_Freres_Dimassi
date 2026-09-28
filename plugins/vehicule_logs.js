@@ -1,7 +1,9 @@
 const fp = require('fastify-plugin'); //widen file scoop 
 const database = require('better-sqlite3');
+const path = require('path');
 async function inOutLogsPlugins(fastify , option) {
-    const db = new database( "in_out_logs_db.db");
+    const db = new database( path.join(__dirname,'in_out_logs_db.db'));
+    db.pragma('foreign_keys = ON');
     db.exec (`
         CREATE TABLE IF NOT EXISTS types (
             type_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -10,7 +12,7 @@ async function inOutLogsPlugins(fastify , option) {
     );
 
         CREATE TABLE IF NOT EXISTS vehicule (
-            vehicule_id INTEGER PRIMARY KEY AUTOINCREMENT, 
+            vehicule_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, 
             type_id INTEGER NOT NULL ,
             numero_serie INTEGER , 
             description TEXT ,
@@ -19,7 +21,7 @@ async function inOutLogsPlugins(fastify , option) {
         CREATE TABLE IF NOT EXISTS out_logs (
             out_id INTEGER PRIMARY KEY AUTOINCREMENT,
             vehicule_id INTEGER ,
-            date_of_exit TEXT,
+            date_of_exit TEXT
             FOREIGN KEY (vehicule_id) REFERENCES vehicule(vehicule_id)
                 
         );
@@ -27,7 +29,7 @@ async function inOutLogsPlugins(fastify , option) {
         CREATE TABLE IF NOT EXISTS in_logs (
             in_id INTEGER PRIMARY KEY AUTOINCREMENT ,
             vehicule_id INTEGER ,
-            date_of_exit TEXT,
+            date_of_entry TEXT,
             FOREIGN KEY (vehicule_id) REFERENCES vehicule(vehicule_id)
 
         );
@@ -42,7 +44,7 @@ async function inOutLogsPlugins(fastify , option) {
         
     
 }
-module.exports=fp(dbpluging);
+module.exports=fp(inOutLogsPlugins);
 
 
 

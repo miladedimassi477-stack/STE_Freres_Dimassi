@@ -1,8 +1,9 @@
 const fp = require('fastify-plugin'); // this widens the plugins scoop of view to include the entire app 
 const Database = require('better-sqlite3'); //importing sqlite3 
-
+const path = require('path');
 async function dbPlugin(fastify, options) {
-  const db = new Database('HRMS.db'); // the path.join creats this path /home/you/hrms/plugins/HRMS.db , and the new part makes sure to create the database if it doesn't originally exit and if it does then it simply opens it 
+  const db = new Database(path.join(__dirname,'HRMS.db')); // the path.join creats this path /home/you/hrms/plugins/HRMS.db , and the new part makes sure to create the database if it doesn't originally exit and if it does then it simply opens it 
+  db.pragma('foreign_keys = ON');
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS workers (

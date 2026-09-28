@@ -1,12 +1,16 @@
-import Fastify from 'fastify';
-import dbPlugin from './plugins/HRMS_db.js';
-import inOutLogsPlugins from './plugins/vehicule_logs.js';
-import spendingLogsPlugins from './plugins/spending_logs.js';
+const Fastify = require('fastify');
+const dbPlugin = require('./plugins/HRMS_db.js');
+const inOutLogsPlugins = require('./plugins/vehicule_logs.js');
+const spendingLogsPlugins = require('./plugins/spending_logs.js');
+const monthly_logs_plugin = require('./plugins/monthly_logs_db.js');
+const yearly_logs_plugins = require('./plugins/yearly_logs.js');
 const fastify = Fastify({logger : true });
 
 fastify.register(dbPlugin);
 fastify.register(inOutLogsPlugins);
 fastify.register(spendingLogsPlugins);
+fastify.register(monthly_logs_plugin);
+fastify.register(yearly_logs_plugins);
 /*usefull : 
 hrms_db for acces for the HRMS Database 
 vehicule_db -> in_out_logs_db 
@@ -23,26 +27,39 @@ spending logs is spending_logs_db
 fastify.post('/hrms/worker' , async (req , res ) =>{
     const {wk_id , wk_name , wk_salary , wk_monthly_deposit} = req.body;
     const info = fastify.hrms_db.prepare('insert into workers (worker_id , worker_name , worker_salary , worker_monthly_deposit,worker_owes ) VALUES (?,?,?,?,?)').run(wk_id , wk_name , wk_salary , wk_monthly_deposit,0);
-    fastify.hrms_db.prepare('insert into attandence (worker_id,number_of_days_woked,days_worked,extra_hours) VALUES (?,?,?,?)').run(wk_id,0,"0",0);
-    fastify.hrms_db.prepare('insert into payroll (worker_id , to_pay_the_worker,bonuse,money_given_this_week_before_pay_day) values (?,?,?,?)').run(wek_id , 0 , 0,0.0);ttandence_id, 
+    fastify.hrms_db.prepare('insert into attandence (worker_id,number_of_days_worked,days_worked,extra_hours) VALUES (?,?,?,?)').run(wk_id,0,"0",0);
+    fastify.hrms_db.prepare('insert into payroll (worker_id , to_pay_the_worker,bonuse,money_given_this_week_before_pay_day) values (?,?,?,?)').run(wk_id , 0 , 0,0.0); 
     res.code(201);
     return {worker_id : info.lastInsertRowid};
 });
 //search worker 
 fastify.get('/hrms/worker/:wk_id' , async(req , res ) => {
-    return fastify.hrms_db.prepare('select * from workers where worker_id = ? ').get(req.params.wk_id) ; 
+    const info =  fastify.hrms_db.prepare('select * from workers where worker_id = ? ').get(req.params.wk_id) ; 
+    if (info == undefined ) { 
+        res.code(500);
+    }
+    res.code(210);
 })
 //delete worker 
 fastify.delete('/hrms/worker/:wk_id' , async (req  , res) => {
     const info = fastify.hrms_db.prepare('delete from workers where worker_id = ? ' ).run(req.params.wk_id);
+    fastify.hrms_db/prepare('delete from attandence where worker_id = ? ').run(req.params.wk_id);
+    fastify.hrms_db/prepare('delete from payroll where worker_id = ? ').run(req.params.wk_id);
+
+    if(info.changes === 0 ){
+        res.code(404);
+    }
     res.code(202);
     return {deleted : info.changes }; 
 })
 //modifier worker 
 fastify.put('/hrms/worker', async (req , res ) => {
     const {wk_id , wk_name , wk_salary , wk_monthly_deposit} = req.body;
-    const info = fastify.hrms_db.prepare('update workers set worker_name = ? , worker_salary= ? , worker_monthly_deposit=? where worker_id = ? ').run(wk_name , wk_salary , wk_monthly_deposit,wk_id);
-    res.code(203);
+    const info = fastify.hrms_db.prepare('update workers set worker_name = ? AND worker_salary= ? AND worker_monthly_deposit=? where worker_id = ? ').run(wk_name , wk_salary , wk_monthly_deposit,wk_id);
+    if (info.changes === 0 ) { 
+        res.code(404);
+    }
+    res.code(204);
     return {updated : info.changes};
 
 });
@@ -73,7 +90,7 @@ fastify.put('/hrms/start_cycle' , async (req , rep) =>{
     //parse the id's and restart the paayroll and bonuses 
     workers.forEach(element => {
         fastify.hrms_db.prepare('update payroll set to_pay_the_worker = ? AND bonuse = ? AND money_given_this_week_before_pay_day = ? where worker_id=?').run(0,0,0.0,element.worker_id);
-        fastify.hrms_db.prepare('update attandence SET number_of_days_worked = ? , extra_hours = ?  , days_worked = ? ').run(0,0,"0");
+        fastify.hrms_db.prepare('update attandence SET number_of_days_worked = ? , extra_hours = ?  , days_worked = ? where worker_id = ? ').run(0,0,"0",element.worker_id);
     });
 
     rep.code(204); // this is a code for everything going well 
@@ -84,8 +101,10 @@ fastify.get('/hrms/end_cycle' , async(req ,  rep ) =>{
     //money data : the data we will be collecting are the money out (meanning how much money was spent on wages) and how much money was handed before pay day this week 
     //extracting the data :
     const sum_wages = fastify.hrms_db.prepare('select sum(to_pay_the_worker) as res from payroll ').get().res; //this return the sum of wages to pay based on attandence ; 
-    const sum_money_given_before_pay_day = fastify.hrms_db.prepare('select sum(money_given_this_week_before_pay_day) as res from payroll').get().res; // this returns the sum of money_given_this_week_before_pay_day
+    const sum_money_given_before_pay_day = fastify.hrms_db.prepare('select sum(money_given_this_week_before_pay_day) as res from payroll').get().res; // this returns the sum of money_given_this_week_before_pay_day it will be shown iat the end of the week 
+    const expected_money_from_vehicules_out = fastify.in_out_logs_db.prepare('select sum(price) as res from OUT O , vehicul V , types T where O.vehicul_id = V.vehicul_id and V.type_id = T.type_id ').get().res;
     //logging the data : 
+    const info = fastify.monthly_logs_db.prepare('insert into wages (amount_given) VALUES ( ? ) ').run(sum_wages);
 
     //attandence data : 
     //extracting 
