@@ -18,7 +18,7 @@ async function inOutLogsPlugins(fastify , option) {
             description TEXT ,
             FOREIGN KEY (type_id) REFERENCES types(type_id)
         ); 
-        CREATE TABLE IF NOT EXISTS out_logs (
+        CREATE TABLE IF NOT EXISTS out_logs ( 
             out_id INTEGER PRIMARY KEY AUTOINCREMENT,
             vehicule_id INTEGER ,
             date_of_exit TEXT
