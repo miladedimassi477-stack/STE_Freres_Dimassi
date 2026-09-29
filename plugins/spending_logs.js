@@ -1,26 +1,15 @@
 const fp = require('fastify-plugin');
 const database = require('better-sqlite3');
-
-
-async function fpplugin(fastify , option) {
-    const db = new database('./spending__logs.db');
+const path = require('path');
+async function spendingLogsPlugins(fastify , option) {
+    const db = new database(path.join(__dirname,'./spending__logs.db'));
     db.exec(`
-        CREATE TABLE IF NOT EXISTS chefs (
-        chef_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        chef_name TEXT NOT NULL     
-    );
-        CREATE TABLE IF NOT EXISTS item (
-            item_id INTEGER PRIMARY KEY AUTOINCREMENT ,
-            name TEXT NOT NULL , 
-            price REAL NOT NULL ,
-            date_of_log TEXT NOT NULL 
-        );
+        
         CREATE TABLE IF NOT EXISTS logs (
             log_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            item_id INTEGER NOT NULL , 
-            chef_id INTEGER NOT NULL ,
-            FOREIGN KEY (item_id) REFERENCES item(item_id),
-            FOREIGN KEY (chef_id) REFERENCES chefs(chef_id) 
+            item_name TEXT NOT NULL , 
+            chef_name TEXT NOT NULL ,
+            amount REAL 
         );
         `);
         console.log('spending_logs DB is ready !');
@@ -33,4 +22,4 @@ async function fpplugin(fastify , option) {
     }
 
 
-module.exports=fp(fpplugin);
+module.exports=fp(spendingLogsPlugins);

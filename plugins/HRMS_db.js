@@ -1,31 +1,32 @@
 const fp = require('fastify-plugin'); // this widens the plugins scoop of view to include the entire app 
 const Database = require('better-sqlite3'); //importing sqlite3 
-
+const path = require('path');
 async function dbPlugin(fastify, options) {
-  const db = new Database('HRMS.db'); // the path.join creats this path /home/you/hrms/plugins/HRMS.db , and the new part makes sure to create the database if it doesn't originally exit and if it does then it simply opens it 
+  const db = new Database(path.join(__dirname,'HRMS.db')); // the path.join creats this path /home/you/hrms/plugins/HRMS.db , and the new part makes sure to create the database if it doesn't originally exit and if it does then it simply opens it 
+  db.pragma('foreign_keys = ON');
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS workers (
       worker_id              INTEGER PRIMARY KEY ,
       worker_name            TEXT NOT NULL,
       worker_salary          REAL,
-      worker_monthly_deposit REAL
+      worker_monthly_deposit REAL,
+      worker_owes   REAL DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS payroll (
       payroll_id    INTEGER PRIMARY KEY AUTOINCREMENT,
       worker_id     INTEGER NOT NULL,
-      pay_month     TEXT NOT NULL,          -- e.g. '2026-09'
       to_pay_worker REAL DEFAULT 0,
-      worker_owes   REAL DEFAULT 0,
-      bonus         REAL DEFAULT 0,
+      bonuse        REAL DEFAULT 0,
+      money_given_this_week_before_pay_day REAL DEFAULT 0
       FOREIGN KEY (worker_id) REFERENCES workers(worker_id) ON DELETE CASCADE
     );
 
     CREATE TABLE IF NOT EXISTS attendance (
-      attendance_id   INTEGER PRIMARY KEY AUTOINCREMENT,
+      attandence_id   INTEGER PRIMARY KEY AUTOINCREMENT,
       worker_id       INTEGER NOT NULL,
-      work_days       REAL NOT NULL,       
+      number_of_days_worked       REAL NOT NULL,       
       days_worked     TEXT NOT NULL, 
       extra_hours     REAL DEFAULT 0,
       FOREIGN KEY (worker_id) REFERENCES workers(worker_id) ON DELETE CASCADE
